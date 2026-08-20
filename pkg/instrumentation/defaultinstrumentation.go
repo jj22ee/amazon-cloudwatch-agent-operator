@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"strings"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -174,7 +173,10 @@ func defaultResourceAttributes(agentConfig *adapters.CwaConfig, k8sMode string) 
 	}
 	// Only claim the EKS platform when the deployment is actually EKS; ROSA / native K8s must
 	// keep the generic "k8s:" prefix, matching the agent (KubernetesMode == ModeEKS ? eks : k8s).
-	if strings.EqualFold(k8sMode, k8sModeEKS) {
+	// Determined by runtime detection (the same signal the agent uses), so this is correct on any
+	// cluster type without requiring .Values.k8sMode to be set; K8S_MODE is only a fallback when
+	// detection is inconclusive. See eksdetector.go.
+	if shouldClaimEKSPlatform(k8sMode) {
 		attrs["cloud.platform"] = "aws_eks"
 	}
 	return attrs
